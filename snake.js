@@ -2,6 +2,12 @@ const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
 const canvas_size = 200;
 const cell_size = 20;
+const directions = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  right: { x: 1, y: 0 },
+  left: { x: -1, y: 0 }
+};
 
 var grid, apple, snake;
 
@@ -36,15 +42,15 @@ class Apple {
 }
 
 class Snake {
-  constructor(positions) {
+  constructor(positions, direction) {
     this.positions = positions;
+    this.direction = direction;
   }
 
   move = () => {
     let headPosition = this.positions[0];
-    let column = headPosition.x / cell_size;
-    let row = headPosition.y / cell_size;
-    column++;
+    let column = headPosition.x / cell_size + this.direction.x;
+    let row = headPosition.y / cell_size + this.direction.y;
 
     let isInsideGrid = row >= 0 && row < grid.positions.length &&
                        column >= 0 && column < grid.positions.length;
@@ -61,6 +67,18 @@ class Snake {
   };
 }
 
+document.addEventListener("keydown", (event) => {
+  if (event.key == "ArrowDown" && snake.direction.y == 0) {
+    snake.direction = directions.down;
+  } else if (event.key == "ArrowUp" && snake.direction.y == 0) {
+    snake.direction = directions.up;
+  } else if (event.key == "ArrowRight" && snake.direction.x == 0) {
+    snake.direction = directions.right;
+  } else if (event.key == "ArrowLeft" && snake.direction.x == 0) {
+    snake.direction = directions.left;
+  }
+});
+
 const loop = () => {
   context.clearRect(0, 0, canvas_size, canvas_size);
   grid.draw();
@@ -76,7 +94,7 @@ const initialize = () => {
 
   grid = new Grid(canvas_size / cell_size);
   apple = new Apple(grid.positions[4][4]);
-  snake = new Snake([grid.positions[0][0], grid.positions[1][0]]);
+  snake = new Snake([grid.positions[0][0], grid.positions[1][0]], directions.right);
 
   setInterval(loop, 200);
 }
