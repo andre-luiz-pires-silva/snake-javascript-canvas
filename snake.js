@@ -40,10 +40,34 @@ class Snake {
     this.positions = positions;
   }
 
+  move = () => {
+    let headPosition = this.positions[0];
+    let column = headPosition.x / cell_size;
+    let row = headPosition.y / cell_size;
+    column++;
+
+    let isInsideGrid = row >= 0 && row < grid.positions.length &&
+                       column >= 0 && column < grid.positions.length;
+    if (isInsideGrid) {
+      const nextHeadPosition = grid.positions[column][row];
+      this.positions.unshift(nextHeadPosition);
+      this.positions.pop();
+    }
+  }
+
   draw = () => {
     context.fillStyle = "green";
     this.positions.forEach(position => context.fillRect(position.x, position.y, cell_size, cell_size));
   };
+}
+
+const loop = () => {
+  context.clearRect(0, 0, canvas_size, canvas_size);
+  grid.draw();
+  apple.draw();
+  snake.move();
+  snake.draw();
+  context.stroke();
 }
 
 const initialize = () => {
@@ -51,15 +75,10 @@ const initialize = () => {
   canvas.height = canvas_size;
 
   grid = new Grid(canvas_size / cell_size);
-  grid.draw();
-
   apple = new Apple(grid.positions[4][4]);
-  apple.draw();
-
   snake = new Snake([grid.positions[0][0], grid.positions[1][0]]);
-  snake.draw();
 
-  context.stroke();
+  setInterval(loop, 200);
 }
 
 initialize();
