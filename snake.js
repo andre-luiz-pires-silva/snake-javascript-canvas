@@ -1,6 +1,7 @@
+const messages = document.getElementById("messages");
 const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
-const canvas_size = 200;
+const canvas_size = canvas.width;
 const cell_size = 20;
 const directions = {
   up: { x: 0, y: -1 },
@@ -9,7 +10,7 @@ const directions = {
   left: { x: -1, y: 0 }
 };
 
-var grid, apple, snake;
+var grid, apple, snake, interval;
 
 getRandomFreePosition = () => {
   let freePositions = grid.positions.flat().filter(position => !snake.positions.includes(position));
@@ -58,18 +59,30 @@ class Snake {
     let column = headPosition.x / cell_size + this.direction.x;
     let row = headPosition.y / cell_size + this.direction.y;
 
-    let isInsideGrid = row >= 0 && row < grid.positions.length &&
-                       column >= 0 && column < grid.positions.length;
-    if (isInsideGrid) {
-      const nextHeadPosition = grid.positions[column][row];
-      this.positions.unshift(nextHeadPosition);
-      let dropedTail = this.positions.pop();
+    let isOutOfGrid = row < 0 || row >= grid.positions.length ||
+                      column < 0 || column >= grid.positions.length;
+    if (isOutOfGrid) {
+      return gameOver("Game Over.");
+    }
 
-      let eatApple = headPosition == apple.position;
-      if (eatApple) {
-        this.positions.push(dropedTail);
-        apple = new Apple(getRandomFreePosition());        
+    headPosition = grid.positions[column][row];
+    this.positions.unshift(headPosition);
+    let dropedTail = this.positions.pop();
+
+    let tailPositions = this.positions.slice(1, this.positions.length);
+    let selfColide = tailPositions.some(tail => tail == headPosition);
+    if (selfColide) {
+      return gameOver("Game Over.");
+    }
+
+    let eatApple = headPosition == apple.position;
+    if (eatApple) {
+      this.positions.push(dropedTail);
+      let newApplePosition = getRandomFreePosition();
+      if (!newApplePosition) {
+        gameOver("You Win!")
       }
+      apple = new Apple(newApplePosition);
     }
   }
 
@@ -79,7 +92,7 @@ class Snake {
   };
 }
 
-document.addEventListener("keydown", (event) => {
+document.addEventListener("keydown", event => {
   if (event.key == "ArrowDown" && snake.direction.y == 0) {
     snake.direction = directions.down;
   } else if (event.key == "ArrowUp" && snake.direction.y == 0) {
@@ -101,14 +114,16 @@ const loop = () => {
 }
 
 const initialize = () => {
-  canvas.width = canvas_size;
-  canvas.height = canvas_size;
-
   grid = new Grid(canvas_size / cell_size);
   snake = new Snake([grid.positions[0][0], grid.positions[1][0]], directions.right);
   apple = new Apple(getRandomFreePosition());
 
-  setInterval(loop, 200);
+  interval = setInterval(loop, 200);
+}
+
+const gameOver = message => {
+  messages.innerText = `${message}. Press F5 to start again.`;
+  clearInterval(interval);
 }
 
 initialize();
