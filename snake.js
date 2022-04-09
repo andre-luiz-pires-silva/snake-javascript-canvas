@@ -11,6 +11,12 @@ const directions = {
 
 var grid, apple, snake;
 
+getRandomFreePosition = () => {
+  let freePositions = grid.positions.flat().filter(position => !snake.positions.includes(position));
+  let randomIndex = Math.floor(Math.random() * freePositions.length);
+  return freePositions[randomIndex];
+};
+
 class Grid {
   constructor(size) {
     this.positions = [];
@@ -57,7 +63,13 @@ class Snake {
     if (isInsideGrid) {
       const nextHeadPosition = grid.positions[column][row];
       this.positions.unshift(nextHeadPosition);
-      this.positions.pop();
+      let dropedTail = this.positions.pop();
+
+      let eatApple = headPosition == apple.position;
+      if (eatApple) {
+        this.positions.push(dropedTail);
+        apple = new Apple(getRandomFreePosition());        
+      }
     }
   }
 
@@ -82,9 +94,9 @@ document.addEventListener("keydown", (event) => {
 const loop = () => {
   context.clearRect(0, 0, canvas_size, canvas_size);
   grid.draw();
-  apple.draw();
   snake.move();
   snake.draw();
+  apple.draw();
   context.stroke();
 }
 
@@ -93,8 +105,8 @@ const initialize = () => {
   canvas.height = canvas_size;
 
   grid = new Grid(canvas_size / cell_size);
-  apple = new Apple(grid.positions[4][4]);
   snake = new Snake([grid.positions[0][0], grid.positions[1][0]], directions.right);
+  apple = new Apple(getRandomFreePosition());
 
   setInterval(loop, 200);
 }
