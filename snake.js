@@ -1,7 +1,7 @@
 const messages = document.getElementById("messages");
 const canvas = document.getElementById("canvas");
 const context = canvas.getContext("2d");
-const canvas_size = canvas.width;
+const canvas_size = 200;
 const cell_size = 20;
 const directions = {
   up: { x: 0, y: -1 },
@@ -13,7 +13,7 @@ const directions = {
 var grid, apple, snake, interval;
 
 getRandomFreePosition = () => {
-  let freePositions = grid.positions.flat().filter(position => !snake.positions.includes(position));
+  let freePositions = grid.positions.flat().filter((position) => !snake.positions.includes(position));
   let randomIndex = Math.floor(Math.random() * freePositions.length);
   return freePositions[randomIndex];
 };
@@ -33,7 +33,7 @@ class Grid {
   }
 
   draw = () => {
-    this.positions.flat().forEach(position => context.rect(position.x, position.y, cell_size, cell_size));
+    this.positions.flat().forEach((position) => context.rect(position.x, position.y, cell_size, cell_size));
   };
 }
 
@@ -59,8 +59,7 @@ class Snake {
     let column = headPosition.x / cell_size + this.direction.x;
     let row = headPosition.y / cell_size + this.direction.y;
 
-    let isOutOfGrid = row < 0 || row >= grid.positions.length ||
-                      column < 0 || column >= grid.positions.length;
+    let isOutOfGrid = !grid.positions[column] || !grid.positions[column][row];
     if (isOutOfGrid) {
       return gameOver("Game Over.");
     }
@@ -69,8 +68,8 @@ class Snake {
     this.positions.unshift(headPosition);
     let dropedTail = this.positions.pop();
 
-    let tailPositions = this.positions.slice(1, this.positions.length);
-    let selfColide = tailPositions.some(tail => tail == headPosition);
+    let tailPositions = this.positions.slice(1);
+    let selfColide = tailPositions.includes(headPosition);
     if (selfColide) {
       return gameOver("Game Over.");
     }
@@ -80,19 +79,21 @@ class Snake {
       this.positions.push(dropedTail);
       let newApplePosition = getRandomFreePosition();
       if (!newApplePosition) {
-        gameOver("You Win!")
+        return gameOver("You Win!");
       }
       apple = new Apple(newApplePosition);
     }
-  }
+  };
 
   draw = () => {
     context.fillStyle = "green";
-    this.positions.forEach(position => context.fillRect(position.x, position.y, cell_size, cell_size));
+    this.positions.forEach((position) =>
+      context.fillRect(position.x, position.y, cell_size, cell_size)
+    );
   };
 }
 
-document.addEventListener("keydown", event => {
+document.addEventListener("keydown", (event) => {
   if (event.key == "ArrowDown" && snake.direction.y == 0) {
     snake.direction = directions.down;
   } else if (event.key == "ArrowUp" && snake.direction.y == 0) {
@@ -111,19 +112,22 @@ const loop = () => {
   snake.draw();
   apple.draw();
   context.stroke();
-}
+};
 
 const initialize = () => {
+  canvas.width = canvas_size;
+  canvas.height = canvas_size;
+
   grid = new Grid(canvas_size / cell_size);
   snake = new Snake([grid.positions[0][0], grid.positions[1][0]], directions.right);
   apple = new Apple(getRandomFreePosition());
 
   interval = setInterval(loop, 200);
-}
+};
 
-const gameOver = message => {
-  messages.innerText = `${message}. Press F5 to start again.`;
+const gameOver = (message) => {
+  messages.innerText = `${message} Press F5 to start again.`;
   clearInterval(interval);
-}
+};
 
 initialize();
