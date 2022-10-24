@@ -12,96 +12,101 @@ const directions = {
 
 var grid, apple, snake, interval;
 
-getRandomFreePosition = () => {
-  let freePositions = grid.positions.flat().filter((position) => !snake.positions.includes(position));
+const getRandomFreePosition = () => {
+  let freePositions = grid.positions.flat().filter((position) => !snake.getPositions().includes(position));
   let randomIndex = Math.floor(Math.random() * freePositions.length);
   return freePositions[randomIndex];
 };
 
-class Grid {
-  constructor(size) {
-    this.positions = [];
-    for (let column = 0; column < size; column++) {
-      this.positions[column] = [];
-      for (let row = 0; row < size; row++) {
-        this.positions[column][row] = {
-          x: column * cell_size,
-          y: row * cell_size
-        };
+const buildGrid = (size) => {
+  this.positions = [];
+  for (let column = 0; column < size; column++) {
+    this.positions[column] = [];
+    for (let row = 0; row < size; row++) {
+      this.positions[column][row] = {
+        x: column * cell_size,
+        y: row * cell_size
+      };
+    }
+  }
+
+  return {
+    positions,
+    draw: function() { 
+      this.positions.flat().forEach((position) => context.rect(position.x, position.y, cell_size, cell_size))    
+    }
+  }
+}
+
+const buildApple = (position) => {
+  return {
+    position,
+    draw: () => {
+      context.fillStyle = "red";
+      context.fillRect(position.x, position.y, cell_size, cell_size);
+    }
+  }
+}
+
+const buildSnake = function(positions, direction) {
+  this.direction = direction;
+  this.positions = positions;
+
+  return {
+    getPositions: () => this.positions,
+    getDirection: () => this.direction,
+    setDirection: (direction) => {
+      this.direction = direction      
+    },
+    move: () => {
+      positions = [...positions]
+      let headPosition = this.positions[0];
+      let column = headPosition.x / cell_size + this.direction.x;
+      let row = headPosition.y / cell_size + this.direction.y;
+  
+      let isOutOfGrid = !grid.positions[column] || !grid.positions[column][row];
+      if (isOutOfGrid) {
+        return gameOver("Game Over.");
       }
-    }
-  }
-
-  draw = () => {
-    this.positions.flat().forEach((position) => context.rect(position.x, position.y, cell_size, cell_size));
-  };
-}
-
-class Apple {
-  constructor(position) {
-    this.position = position;
-  }
-
-  draw = () => {
-    context.fillStyle = "red";
-    context.fillRect(this.position.x, this.position.y, cell_size, cell_size);
-  };
-}
-
-class Snake {
-  constructor(positions, direction) {
-    this.positions = positions;
-    this.direction = direction;
-  }
-
-  move = () => {
-    let headPosition = this.positions[0];
-    let column = headPosition.x / cell_size + this.direction.x;
-    let row = headPosition.y / cell_size + this.direction.y;
-
-    let isOutOfGrid = !grid.positions[column] || !grid.positions[column][row];
-    if (isOutOfGrid) {
-      return gameOver("Game Over.");
-    }
-
-    headPosition = grid.positions[column][row];
-    this.positions.unshift(headPosition);
-    let dropedTail = this.positions.pop();
-
-    let tailPositions = this.positions.slice(1);
-    let selfColide = tailPositions.includes(headPosition);
-    if (selfColide) {
-      return gameOver("Game Over.");
-    }
-
-    let eatApple = headPosition == apple.position;
-    if (eatApple) {
-      this.positions.push(dropedTail);
-      let newApplePosition = getRandomFreePosition();
-      if (!newApplePosition) {
-        return gameOver("You Win!");
+  
+      headPosition = grid.positions[column][row];
+      this.positions.unshift(headPosition);
+      let dropedTail = this.positions.pop();
+  
+      let tailPositions = this.positions.slice(1);
+      let selfColide = tailPositions.includes(headPosition);
+      if (selfColide) {
+        return gameOver("Game Over.");
       }
-      apple = new Apple(newApplePosition);
+  
+      let eatApple = headPosition == apple.position;
+      if (eatApple) {
+        this.positions.push(dropedTail);
+        let newApplePosition = getRandomFreePosition();
+        if (!newApplePosition) {
+          return gameOver("You Win!");
+        }
+        apple = buildApple(newApplePosition);
+      }
+    },
+    draw: () => {      
+      context.fillStyle = "green";
+      this.positions.forEach((position) =>
+        context.fillRect(position.x, position.y, cell_size, cell_size)
+      );
     }
-  };
-
-  draw = () => {
-    context.fillStyle = "green";
-    this.positions.forEach((position) =>
-      context.fillRect(position.x, position.y, cell_size, cell_size)
-    );
-  };
+  }
 }
 
-document.addEventListener("keydown", (event) => {
-  if (event.key == "ArrowDown" && snake.direction.y == 0) {
-    snake.direction = directions.down;
-  } else if (event.key == "ArrowUp" && snake.direction.y == 0) {
-    snake.direction = directions.up;
-  } else if (event.key == "ArrowRight" && snake.direction.x == 0) {
-    snake.direction = directions.right;
-  } else if (event.key == "ArrowLeft" && snake.direction.x == 0) {
-    snake.direction = directions.left;
+document.addEventListener("keydown", (event) => {  
+  if (event.key == "ArrowDown" && snake.getDirection().y == 0) {
+    snake.setDirection(directions.down);
+  } else if (event.key == "ArrowUp" && snake.getDirection().y == 0) {
+    snake.setDirection(directions.up);
+  } else if (event.key == "ArrowRight" && snake.getDirection().x == 0) {
+    snake.setDirection(directions.right);
+  } else if (event.key == "ArrowLeft" && snake.getDirection().x == 0) {
+    snake.setDirection(directions.left);
   }
 });
 
@@ -118,9 +123,9 @@ const initialize = () => {
   canvas.width = canvas_size;
   canvas.height = canvas_size;
 
-  grid = new Grid(canvas_size / cell_size);
-  snake = new Snake([grid.positions[0][0], grid.positions[1][0]], directions.right);
-  apple = new Apple(getRandomFreePosition());
+  grid = buildGrid(canvas_size / cell_size);
+  snake = buildSnake([grid.positions[0][0], grid.positions[1][0]], directions.right);
+  apple = buildApple(getRandomFreePosition());
 
   interval = setInterval(loop, 200);
 };
